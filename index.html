@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SITA v2.2 - VTT</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar-left">
+        <div class="panel-header">
+            <i class="fas fa-dice-d20"></i> DICE
+            <button class="btn-icon small" onclick="sita.clearLog()"><i class="fas fa-trash"></i></button>
+        </div>
+        
+        <div class="dice-grid">
+            <button onclick="sita.roll('1d4')">d4</button>
+            <button onclick="sita.roll('1d6')">d6</button>
+            <button onclick="sita.roll('1d8')">d8</button>
+            <button onclick="sita.roll('1d10')">d10</button>
+            <button onclick="sita.roll('1d12')">d12</button>
+            <button onclick="sita.roll('1d20')">d20</button>
+            <button onclick="sita.roll('1d100')">d100</button>
+        </div>
+        <div class="custom-roll">
+            <input type="text" id="formula-input" placeholder="Ex: 2d20kh1+5">
+            <button onclick="sita.rollCustom()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+
+        <div id="chat-log" class="chat-log">
+            <div class="log-entry system">SITA v2.2 Online.</div>
+        </div>
+
+        <div class="panel" style="flex: 1; display: flex; flex-direction: column; border-top: 1px solid #333;">
+            <div class="panel-header"><i class="fas fa-sticky-note"></i> NOTAS PRIVADAS</div>
+            <textarea id="private-notes" class="notes-area" placeholder="Anotações do Mestre..." oninput="sita.saveNotes()"></textarea>
+        </div>
+        
+        <div class="footer-credit">By: Zinnxs</div>
+    </aside>
+
+    <main class="viewport">
+        <div class="screen-controls">
+            <button class="player-screen-btn" onclick="sita.openPlayerScreen()">
+                <i class="fas fa-external-link-alt"></i> TELA JOGADOR (POP-UP)
+            </button>
+            <label class="sync-toggle">
+                <input type="checkbox" id="sync-view-toggle" onchange="sita.toggleSync()">
+                <span>Sincronizar Visão</span>
+            </label>
+        </div>
+
+        <div id="fx-overlay" class="fx-layer"></div>
+        <canvas id="game-canvas"></canvas>
+        
+        <div class="toolbar-bottom">
+            <div class="tool-group">
+                <button title="Mover Câmera (Espaço)" onclick="sita.setTool('pan')" id="btn-pan" class="active"><i class="fas fa-hand-paper"></i></button>
+                <button title="Selecionar (V)" onclick="sita.setTool('select')" id="btn-sel"><i class="fas fa-mouse-pointer"></i></button>
+                <button title="Régua (R)" onclick="sita.setTool('ruler')" id="btn-rul"><i class="fas fa-ruler"></i></button>
+            </div>
+            <div class="separator"></div>
+            <div class="tool-group">
+                <button title="Pincel (B)" onclick="sita.setTool('draw')" id="btn-draw"><i class="fas fa-paint-brush"></i></button>
+                <input type="color" id="brush-color" value="#ff0000">
+                <input type="range" id="brush-size" min="2" max="30" value="5" style="width:50px">
+                <button title="Limpar Desenhos" onclick="sita.clearDrawings()"><i class="fas fa-eraser"></i></button>
+            </div>
+            <div class="separator"></div>
+            <div class="tool-group">
+                <button title="Revelar Névoa" onclick="sita.setTool('fog-reveal')" id="btn-reveal"><i class="fas fa-eye"></i></button>
+                <button title="Esconder Névoa" onclick="sita.setTool('fog-hide')" id="btn-hide"><i class="fas fa-eye-slash"></i></button>
+                <button title="Resetar (Escuro)" onclick="sita.resetFog()" class="btn-danger"><i class="fas fa-square-full"></i></button>
+            </div>
+            <div class="separator"></div>
+            <div class="tool-group">
+                <label class="file-upload">
+                    <i class="fas fa-map"></i> MAPA
+                    <input type="file" id="map-upload" accept="image/*">
+                </label>
+            </div>
+        </div>
+    </main>
+
+    <aside class="sidebar-right">
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="sita.openTab('tokens')" title="Tokens"><i class="fas fa-chess-pawn"></i></button>
+            <button class="tab-btn" onclick="sita.openTab('atmos')" title="Atmosfera"><i class="fas fa-cloud-moon"></i></button>
+            <button class="tab-btn" onclick="sita.openTab('init')" title="Iniciativa"><i class="fas fa-list-ol"></i></button>
+            <button class="tab-btn" onclick="sita.openTab('files')" title="Arquivos"><i class="fas fa-save"></i></button>
+        </div>
+
+        <div id="tab-tokens" class="tab-content active">
+            <div class="panel-header">TOKENS</div>
+            <div class="add-token-box">
+                <input type="text" id="token-name" placeholder="Nome">
+                <label class="mini-upload"><i class="fas fa-image"></i><input type="file" id="token-img-upload" accept="image/*"></label>
+                <button onclick="sita.createToken()"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="selected-token-controls" class="token-controls hidden">
+                <div class="control-header" id="sel-token-name">TOKEN</div>
+                <div class="control-row">
+                    <button class="btn-xs" onclick="sita.resizeToken(-0.5)"><i class="fas fa-minus"></i></button>
+                    <span>Tam</span>
+                    <button class="btn-xs" onclick="sita.resizeToken(0.5)"><i class="fas fa-plus"></i></button>
+                </div>
+                <button class="btn-full delete" onclick="sita.deleteSelectedToken()">Excluir</button>
+            </div>
+            <div id="token-list" class="token-list"></div>
+        </div>
+
+        <div id="tab-atmos" class="tab-content hidden">
+            <div class="panel-header">VISUAL & SOM</div>
+            <div class="fx-grid">
+                <label class="fx-card"><input type="checkbox" onchange="sita.toggleFX('rain')"> Chuva</label>
+                <label class="fx-card"><input type="checkbox" onchange="sita.toggleFX('fog')"> Névoa</label>
+                <label class="fx-card"><input type="checkbox" onchange="sita.toggleFX('vignette')"> Terror</label>
+                <label class="fx-card"><input type="checkbox" onchange="sita.toggleFX('grid')" checked> Grid</label>
+                <label class="fx-card"><input type="checkbox" id="mask-toggle" onchange="sita.toggleMaskVis()" checked> Ver Máscara</label>
+            </div>
+            
+            <div class="control-box" style="margin-top:10px;">
+                <label style="font-size:0.75rem; color:#aaa; display:flex; justify-content:space-between;">
+                    Opacidade da Máscara (Jogadores)
+                    <span id="fog-op-val">100%</span>
+                </label>
+                <input type="range" id="fog-opacity" min="0" max="1" step="0.05" value="1" oninput="sita.updateFogOpacity()">
+            </div>
+
+            <div class="separator-h"></div>
+
+            <div class="panel-header"><i class="fas fa-volume-up"></i> VOLUME MASTER</div>
+            <div class="volume-control">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" id="global-volume" min="0" max="1" step="0.1" value="0.5" onchange="sita.updateVolume()">
+                <i class="fas fa-volume-up"></i>
+            </div>
+            <div class="sound-input-group">
+                <label class="file-upload small"><i class="fas fa-folder"></i><input type="file" id="sound-file" accept="audio/*"></label>
+                <input type="text" id="sound-label" placeholder="Nome">
+                <button onclick="sita.addLocalSound()"><i class="fas fa-save"></i></button>
+            </div>
+            <div id="soundboard" class="sound-grid"></div>
+        </div>
+
+        <div id="tab-init" class="tab-content hidden">
+            <div class="panel-header">
+                INICIATIVA 
+                <button class="btn-xs" onclick="sita.nextTurn()"><i class="fas fa-forward"></i></button>
+            </div>
+            <div class="init-input-group">
+                <input type="text" id="init-name" placeholder="Nome">
+                <input type="number" id="init-val" placeholder="#" style="width: 50px;">
+                <button onclick="sita.addInitiative()"><i class="fas fa-plus"></i></button>
+            </div>
+            <button class="btn-full" onclick="sita.sortInitiative()">Ordenar</button>
+            <button class="btn-full delete" onclick="sita.clearInitiative()" style="margin-top:5px;">Limpar</button>
+            <div id="init-list" class="init-list"></div>
+        </div>
+
+        <div id="tab-files" class="tab-content hidden">
+            <div class="panel-header">ARQUIVOS SALVOS</div>
+            <div class="file-input-group">
+                <label class="file-upload full"><i class="fas fa-upload"></i> UPLOAD
+                    <input type="file" id="file-storage-upload">
+                </label>
+            </div>
+            <div id="file-list" class="file-list"></div>
+        </div>
+
+    </aside>
+
+    <script src="script.js"></script>
+</body>
+</html>
